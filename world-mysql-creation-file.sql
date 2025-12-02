@@ -5584,6 +5584,92 @@ ORDER BY ct.SumOfPopulationOfAllCities DESC;
 -- =========== Sean's Section ============
 
 -- ========= Alejandro's Section =========
+-- Query 1: Countries whose population is below the population of their most populated City
+SELECT 
+    c.Name AS CountryName,
+    c.Population AS CountryPopulation,
+    (
+        SELECT MAX(ci.Population)
+        FROM City ci
+        WHERE ci.CountryCode = c.Code
+    ) AS MostPopulatedCity
+FROM Country c
+WHERE c.Population < (
+    SELECT MAX(ci2.Population)
+    FROM City ci2
+    WHERE ci2.CountryCode = c.Code
+)
+ORDER BY c.Population;
+
+-- Query 2: Countries with more than 3 official languages
+SELECT 
+    c.Name AS CountryName,
+    COUNT(*) AS NumberOfOfficialLanguages
+FROM Country c
+JOIN CountryLanguage cl 
+    ON cl.CountryCode = c.Code
+WHERE cl.IsOfficial = 'T'
+GROUP BY c.Code, c.Name
+HAVING COUNT(*) > 3
+ORDER BY NumberOfOfficialLanguages DESC;
+
+-- Query 3: Countries With the Highest GDP per Capita in Each Continent
+SELECT 
+    c.Continent,
+    c.Name AS CountryName,
+    (c.GNP / c.Population) AS GdpPerCapita
+FROM Country c
+WHERE (c.GNP / c.Population) = (
+    SELECT MAX(c2.GNP / c2.Population)
+    FROM Country c2
+    WHERE c2.Continent = c.Continent
+      AND c2.Population > 0
+)
+ORDER BY c.Continent;
+
+-- Query 4: Countries With an Official Language Spoken by More Than 50 Million People Globally
+SELECT 
+    c.Name AS CountryName,
+    cl.Language,
+    langTotals.TotalGlobalSpeakers
+FROM Country c
+JOIN CountryLanguage cl 
+    ON cl.CountryCode = c.Code
+JOIN (
+    -- Total global speakers for each language across all countries
+    SELECT 
+        Language,
+        SUM((Percentage / 100) * c2.Population) AS TotalGlobalSpeakers
+    FROM CountryLanguage cl2
+    JOIN Country c2 ON c2.Code = cl2.CountryCode
+    GROUP BY Language
+) langTotals
+    ON langTotals.Language = cl.Language
+WHERE cl.IsOfficial = 'T'
+  AND langTotals.TotalGlobalSpeakers > 50000000
+ORDER BY langTotals.TotalGlobalSpeakers DESC;
+
+-- Query 5: Countries That Have More Cities Above 500,000 Population Than Their Continent’s Average
+SELECT 
+    c.Name AS CountryName,
+    cl.Language,
+    langTotals.TotalGlobalSpeakers
+FROM Country c
+JOIN CountryLanguage cl 
+    ON cl.CountryCode = c.Code
+JOIN (
+    -- Total global speakers for each language across all countries
+    SELECT 
+        Language,
+        SUM((Percentage / 100) * c2.Population) AS TotalGlobalSpeakers
+    FROM CountryLanguage cl2
+    JOIN Country c2 ON c2.Code = cl2.CountryCode
+    GROUP BY Language
+) langTotals
+    ON langTotals.Language = cl.Language
+WHERE cl.IsOfficial = 'T'
+  AND langTotals.TotalGlobalSpeakers > 50000000
+ORDER BY langTotals.TotalGlobalSpeakers DESC;
 
 
 
