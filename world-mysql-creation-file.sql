@@ -8,7 +8,7 @@ USE world;
 -- Drop project tables first (if they exist) so FKs don't block base drops
 DROP TABLE IF EXISTS PopularFood;
 DROP TABLE IF EXISTS Flag;
-DROP TABLE IF EXISTS TODO;  -- whatever your 3rd table will be
+DROP TABLE IF EXISTS Height;
 
 
 
@@ -5446,9 +5446,41 @@ INSERT INTO Flag (CountryCode, Colors) VALUES
 
 
 -- =========================================
--- Extra tables for project: TODO
+-- Extra tables for project: Height
 -- =========================================
+DROP TABLE IF EXISTS Height;
 
+CREATE TABLE Height (
+    HeightID INT AUTO_INCREMENT,
+    CountryCode CHAR (3) NOT NULL,
+    AvgMaleHeight DECIMAL(4,1) NOT NULL CHECK(AvgMaleHeight > 0),
+    AvgFemaleHeight DECIMAL(4,1) NOT NULL CHECK(AvgFemaleHeight > 0),
+    YearMeasured YEAR NOT NULL CHECK(YearMeasured <= YEAR(CURDATE())),
+    PRIMARY KEY (HeightID),
+    FOREIGN KEY (CountryCode) REFERENCES Country(Code)
+);
+
+INSERT INTO Height (CountryCode, AvgMaleHeight, AvgFemaleHeight, YearMeasured) VALUES
+    ('USA', 175.3, 161.3, 2018),
+    ('MEX', 172.0, 159.0, 2014),
+    ('CAN', 177.0, 163.0, 2011),
+    ('BRA', 175.7, 162.4, 2009),
+    ('ARG', 174.5, 161.0, 2001),
+    ('ITA', 179.4, 165.0, 2018),
+    ('FRA', 175.6, 162.5, 2004),
+    ('ESP', 177.3, 164.0, 2014),
+    ('GBR', 175.3, 161.9, 2012),
+    ('DEU', 180.8, 167.4, 2017),
+    ('JPN', 171.8, 158.6, 2018),
+    ('KOR', 174.7, 162.5, 2022),
+    ('IND', 165.0, 162.0, 2011),
+    ('CHN', 172.6, 160.6, 2020),
+    ('AUS', 175.6, 161.8, 2012),
+    ('THA', 163.7, 153.7, 2018),
+    ('TUR', 177.1, 163.7, 2021),
+    ('GRC', 177.0, 165.0, 2003),
+    ('RUS', 176.0, 163.7, 2021),
+    ('EGY', 170.3, 158.9, 2008);
 
 
 -- ===========================================================================================================================
@@ -5583,6 +5615,66 @@ ORDER BY ct.SumOfPopulationOfAllCities DESC;
 
 -- =========== Sean's Section ============
 
+-- Query #1: Show each country with male & female height.
+SELECT
+    c.Name AS CountryName,
+    h.AvgMaleHeight,
+    h.AvgFemaleHeight,
+    h.YearMeasured
+FROM Height h
+JOIN Country c ON h.CountryCode = c.Code;
+
+-- Query #2: Tallest average male height by each continent.
+SELECT
+    c.Continent,
+    c.Name AS CountryName,
+    h.AvgMaleHeight
+FROM Height h
+JOIN Country c ON h.CountryCode = c.Code
+WHERE (c.Continent, h.AvgMaleHeight) IN (
+    SELECT
+        c2.Continent,
+        MAX(h2.AvgMaleHeight)
+    FROM Height h2
+    JOIN Country c2 ON c2.Code = h2.CountryCode
+    GROUP BY c2.Continent
+)
+ORDER BY h.AvgMaleHeight DESC;
+
+-- Query #3: Countries with the biggest male/female height difference.
+SELECT c.Name,
+    h.AvgMaleHeight - h.AvgFemaleHeight AS HeightDiff
+FROM Height h
+JOIN Country c ON c.Code = h.CountryCode
+WHERE (h.AvgMaleHeight - h.AvgFemaleHeight) = 
+    (SELECT MAX(AvgMaleHeight - AvgFemaleHeight) FROM Height);
+
+-- Query #4: Countries whose height data was recorded before the global median measurement year.
+WITH ordered AS (
+    SELECT 
+        YearMeasured,
+        ROW_NUMBER() OVER (ORDER BY YearMeasured) AS rn,
+        COUNT(*) OVER () AS total
+    FROM Height
+)
+SELECT c.Name, h.YearMeasured
+FROM Height h
+JOIN Country c ON c.Code = h.CountryCode
+WHERE h.YearMeasured <
+    (SELECT YearMeasured
+     FROM ordered
+     WHERE rn = FLOOR(total/2) + 1);
+
+-- Query #5: Countries with above average height but below average GNP
+SELECT 
+    c.Name,
+    h.AvgMaleHeight,
+    c.GNP
+FROM Height h
+JOIN Country c ON h.CountryCode = c.Code
+WHERE h.AvgMaleHeight > (SELECT AVG(AvgMaleHeight) FROM Height)
+  AND c.GNP < (SELECT AVG(GNP) FROM Country);
+  
 -- ========= Alejandro's Section =========
 
 
