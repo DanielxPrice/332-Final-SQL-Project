@@ -5490,18 +5490,19 @@ INSERT INTO Height (CountryCode, AvgMaleHeight, AvgFemaleHeight, YearMeasured) V
 
 -- =========== Daniel's Section ============
 
--- Query 1: List all popular foods with their cuisine type
-SELECT CountryCode, NationalDish, CuisineType
-FROM PopularFood
-ORDER BY CountryCode;
-
-
-
--- Query 2: Countries with their national dish JOIN #1
+-- Query 1: Countries with their national dish JOIN #1
 SELECT c.Name AS CountryName, pf.NationalDish, pf.CuisineType
+FROM PopularFood pf
+JOIN Country c ON pf.CountryCode = c.Code
+ORDER BY c.Name;
+
+
+-- Query 2: Number of countries with recorded national dishes per continent (JOIN + GROUP BY)
+SELECT c.Continent, COUNT(*) AS NumCountriesWithDishes
 FROM Country c
 JOIN PopularFood pf ON c.Code = pf.CountryCode
-ORDER BY c.Name;
+GROUP BY c.Continent
+ORDER BY NumCountriesWithDishes DESC;
 
 
 -- Query 3: Countries where English is an official language and their national dish JOIN #2
@@ -5543,7 +5544,7 @@ JOIN Flag f
     ON c.Code = f.CountryCode
 ORDER BY c.Name;
 
--- Query 2: Which colors are most common
+-- Query 2: Which colors are most common Subquery 3
 SELECT color, COUNT(*) AS NumberOfCountries
 FROM (
     SELECT 
@@ -5583,7 +5584,7 @@ WHERE ci.Population > 1000000
   AND f.Colors LIKE '%red%'
 ORDER BY c.Name, ci.Population DESC;
 
--- Query 5: Countries with "blue" in flag, their most populated city, population of that city, and total population of all their cities
+-- Query 5: Countries with "blue" in flag, their most populated city, population of that city, and total population of all their cities Subquery 4
 SELECT
     c.Name AS Country,
     f.Colors AS FlagColors,
@@ -5624,7 +5625,7 @@ SELECT
 FROM Height h
 JOIN Country c ON h.CountryCode = c.Code;
 
--- Query #2: Tallest average male height by each continent.
+-- Query #2: Tallest average male height by each continent. Subquery 5
 SELECT
     c.Continent,
     c.Name AS CountryName,
@@ -5641,7 +5642,7 @@ WHERE (c.Continent, h.AvgMaleHeight) IN (
 )
 ORDER BY h.AvgMaleHeight DESC;
 
--- Query #3: Countries with the biggest male/female height difference.
+-- Query #3: Countries with the biggest male/female height difference. Subquery 6
 SELECT c.Name,
     h.AvgMaleHeight - h.AvgFemaleHeight AS HeightDiff
 FROM Height h
@@ -5649,7 +5650,7 @@ JOIN Country c ON c.Code = h.CountryCode
 WHERE (h.AvgMaleHeight - h.AvgFemaleHeight) = 
     (SELECT MAX(AvgMaleHeight - AvgFemaleHeight) FROM Height);
 
--- Query #4: Countries whose height data was recorded before the global median measurement year.
+-- Query #4: Countries whose height data was recorded before the global median measurement year. Subquery 7
 WITH ordered AS (
     SELECT 
         YearMeasured,
@@ -5665,7 +5666,7 @@ WHERE h.YearMeasured <
      FROM ordered
      WHERE rn = FLOOR(total/2) + 1);
 
--- Query #5: Countries with above average height but below average GNP
+-- Query #5: Countries with above average height but below average GNP Subquery 8
 SELECT 
     c.Name,
     h.AvgMaleHeight,
@@ -5676,7 +5677,7 @@ WHERE h.AvgMaleHeight > (SELECT AVG(AvgMaleHeight) FROM Height)
   AND c.GNP < (SELECT AVG(GNP) FROM Country);
 
 -- ========= Alejandro's Section =========
--- Query 1: Countries whose population is below the population of their most populated City
+-- Query 1: Countries whose population is below the population of their most populated City Subquery 9
 SELECT 
     c.Name AS CountryName,
     c.Population AS CountryPopulation,
@@ -5705,7 +5706,7 @@ GROUP BY c.Code, c.Name
 HAVING COUNT(*) > 3
 ORDER BY NumberOfOfficialLanguages DESC;
 
--- Query 3: Countries With the Highest GDP per Capita in Each Continent
+-- Query 3: Countries With the Highest GDP per Capita in Each Continent Subquery 10
 SELECT 
     c.Continent,
     c.Name AS CountryName,
@@ -5719,7 +5720,7 @@ WHERE (c.GNP / c.Population) = (
 )
 ORDER BY c.Continent;
 
--- Query 4: Countries With an Official Language Spoken by More Than 50 Million People Globally
+-- Query 4: Countries With an Official Language Spoken by More Than 50 Million People Globally Subquery 11
 SELECT 
     c.Name AS CountryName,
     cl.Language,
@@ -5741,7 +5742,7 @@ WHERE cl.IsOfficial = 'T'
   AND langTotals.TotalGlobalSpeakers > 50000000
 ORDER BY langTotals.TotalGlobalSpeakers DESC;
 
--- Query 5: Countries That Have More Cities Above 500,000 Population Than Their Continent’s Average
+-- Query 5: Countries That Have More Cities Above 500,000 Population Than Their Continent’s Average Subquery 12
 SELECT 
     c.Name AS CountryName,
     cl.Language,
