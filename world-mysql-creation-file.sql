@@ -5455,7 +5455,7 @@ CREATE TABLE Height (
     CountryCode CHAR (3) NOT NULL,
     AvgMaleHeight DECIMAL(4,1) NOT NULL CHECK(AvgMaleHeight > 0),
     AvgFemaleHeight DECIMAL(4,1) NOT NULL CHECK(AvgFemaleHeight > 0),
-    YearMeasured YEAR NOT NULL CHECK(YearMeasured <= YEAR(CURDATE())),
+    YearMeasured YEAR NOT NULL,
     PRIMARY KEY (HeightID),
     FOREIGN KEY (CountryCode) REFERENCES Country(Code)
 );
@@ -5674,7 +5674,7 @@ FROM Height h
 JOIN Country c ON h.CountryCode = c.Code
 WHERE h.AvgMaleHeight > (SELECT AVG(AvgMaleHeight) FROM Height)
   AND c.GNP < (SELECT AVG(GNP) FROM Country);
-  
+
 -- ========= Alejandro's Section =========
 -- Query 1: Countries whose population is below the population of their most populated City
 SELECT 
