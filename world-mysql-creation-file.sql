@@ -5745,24 +5745,41 @@ ORDER BY langTotals.TotalGlobalSpeakers DESC;
 -- Query 5: Countries That Have More Cities Above 500,000 Population Than Their Continent’s Average Subquery 12
 SELECT 
     c.Name AS CountryName,
-    cl.Language,
-    langTotals.TotalGlobalSpeakers
+    c.Continent,
+    highpop.NumCitiesAbove500k,
+    contAvg.AvgCitiesAbove500k AS ContinentAverage
 FROM Country c
-JOIN CountryLanguage cl 
-    ON cl.CountryCode = c.Code
 JOIN (
-    -- Total global speakers for each language across all countries
+    -- Count cities above 500k population for each country
     SELECT 
-        Language,
-        SUM((Percentage / 100) * c2.Population) AS TotalGlobalSpeakers
-    FROM CountryLanguage cl2
-    JOIN Country c2 ON c2.Code = cl2.CountryCode
-    GROUP BY Language
-) langTotals
-    ON langTotals.Language = cl.Language
-WHERE cl.IsOfficial = 'T'
-  AND langTotals.TotalGlobalSpeakers > 50000000
-ORDER BY langTotals.TotalGlobalSpeakers DESC;
+        CountryCode,
+        COUNT(*) AS NumCitiesAbove500k
+    FROM City
+    WHERE Population > 500000
+    GROUP BY CountryCode
+) highpop
+    ON highpop.CountryCode = c.Code
+JOIN (
+    -- Compute the average number of such cities per continent
+    SELECT 
+        c2.Continent,
+        AVG(highpop2.NumCitiesAbove500k) AS AvgCitiesAbove500k
+    FROM Country c2
+    JOIN (
+        SELECT 
+            CountryCode,
+            COUNT(*) AS NumCitiesAbove500k
+        FROM City
+        WHERE Population > 500000
+        GROUP BY CountryCode
+    ) highpop2
+        ON highpop2.CountryCode = c2.Code
+    GROUP BY c2.Continent
+) contAvg
+    ON contAvg.Continent = c.Continent
+WHERE highpop.NumCitiesAbove500k > contAvg.AvgCitiesAbove500k
+ORDER BY c.Continent, highpop.NumCitiesAbove500k DESC;
+
 
 
 
