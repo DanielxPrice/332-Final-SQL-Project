@@ -5423,26 +5423,27 @@ CREATE TABLE Flag (
 );
 
 INSERT INTO Flag (CountryCode, Colors) VALUES
-    ('USA', 'red, white, blue'),
-    ('MEX', 'green, white, red'),
-    ('CAN', 'red, white'),
-    ('BRA', 'green, yellow, blue'),
-    ('ARG', 'blue, white, yellow'),
-    ('ITA', 'green, white, red'),
-    ('FRA', 'blue, white, red'),
-    ('ESP', 'red, yellow'),
-    ('GBR', 'red, white, blue'),
-    ('DEU', 'black, red, yellow'),
-    ('JPN', 'white, red'),
-    ('KOR', 'white, red, blue, black'),
-    ('IND', 'orange, white, green, blue'),
-    ('CHN', 'red, yellow'),
-    ('AUS', 'blue, white, red'),
-    ('THA', 'red, white, blue'),
-    ('TUR', 'red, white'),
-    ('GRC', 'blue, white'),
-    ('RUS', 'white, blue, red'),
-    ('EGY', 'red, white, black, yellow');
+('USA', 'red'), ('USA', 'white'), ('USA', 'blue'),
+('MEX', 'green'), ('MEX', 'white'), ('MEX', 'red'),
+('CAN', 'red'), ('CAN', 'white'),
+('BRA', 'green'), ('BRA', 'yellow'), ('BRA', 'blue'),
+('ARG', 'blue'), ('ARG', 'white'), ('ARG', 'yellow'),
+('ITA', 'green'), ('ITA', 'white'), ('ITA', 'red'),
+('FRA', 'blue'), ('FRA', 'white'), ('FRA', 'red'),
+('ESP', 'red'), ('ESP', 'yellow'),
+('GBR', 'red'), ('GBR', 'white'), ('GBR', 'blue'),
+('DEU', 'black'), ('DEU', 'red'), ('DEU', 'yellow'),
+('JPN', 'white'), ('JPN', 'red'),
+('KOR', 'white'), ('KOR', 'red'), ('KOR', 'blue'), ('KOR', 'black'),
+('IND', 'orange'), ('IND', 'white'), ('IND', 'green'), ('IND', 'blue'),
+('CHN', 'red'), ('CHN', 'yellow'),
+('AUS', 'blue'), ('AUS', 'white'), ('AUS', 'red'),
+('THA', 'red'), ('THA', 'white'), ('THA', 'blue'),
+('TUR', 'red'), ('TUR', 'white'),
+('GRC', 'blue'), ('GRC', 'white'),
+('RUS', 'white'), ('RUS', 'blue'), ('RUS', 'red'),
+('EGY', 'red'), ('EGY', 'white'), ('EGY', 'black'), ('EGY', 'yellow');
+
 
 
 -- =========================================
@@ -5534,39 +5535,43 @@ ORDER BY c.Continent, c.LifeExpectancy DESC;
 
 -- ========== Nathan's Section ===========
 
--- Query 1: Lists the countries and their flag colors
+-- Query 1: Shows each country code, the name of the county, and the colors on their flag
 SELECT 
     c.Code,
     c.Name AS Country,
     f.Colors AS FlagColors
+    
 FROM Country c
+
 JOIN Flag f
     ON c.Code = f.CountryCode
+    
 ORDER BY c.Name;
 
--- Query 2: Which colors are most common Subquery 3
-SELECT color, COUNT(*) AS NumberOfCountries
-FROM (
-    SELECT 
-        f.CountryCode,
-        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(f.Colors, ',', n.n), ',', -1)) AS color
-    FROM Flag f
-    CROSS JOIN (
-        SELECT 1 n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
-    ) n
-    WHERE n.n <= 1 + LENGTH(f.Colors) - LENGTH(REPLACE(f.Colors, ',', ''))
-) AS colorlist
-GROUP BY color
-ORDER BY NumberOfCountries DESC;
+-- Query 2: Shows which colors are most common on all the flags we currently have
+SELECT 
+    f.Colors AS Color,
+    COUNT(DISTINCT f.CountryCode) AS NumberOfCountries
+    
+FROM Flag f
 
--- Query 3: Countries whose flag contain exactly 3 colors
+GROUP BY f.Colors
+
+ORDER BY NumberOfCountries DESC, Color;
+
+-- Query 3: Shows countries whose flag contain exactly 3 colors and what the colors are
 SELECT 
     c.Name AS Country,
-    f.Colors
+    GROUP_CONCAT(f.Colors) AS FlagColors
 FROM Country c
+
 JOIN Flag f
     ON c.Code = f.CountryCode
-WHERE (LENGTH(f.Colors) - LENGTH(REPLACE(f.Colors, ',', ''))) = 2
+    
+GROUP BY c.Code, c.Name
+
+HAVING COUNT(f.Colors) = 3
+
 ORDER BY c.Name;
 
 -- Query 4: Countries whose flag contains the color “red” and all their cities with a population over 1 million, with population of each of those cities
@@ -5574,45 +5579,48 @@ SELECT
     c.Name AS Country,
     f.Colors AS FlagColors,
     ci.Name AS CityName,
-    ci.Population AS CityPopulation
+    FORMAT(ci.Population,0) AS CityPopulation
+    
 FROM Country c
+
 JOIN Flag f
     ON f.CountryCode = c.Code
+    
 JOIN City ci
     ON ci.CountryCode = c.Code
+    
 WHERE ci.Population > 1000000
   AND f.Colors LIKE '%red%'
+  
 ORDER BY c.Name, ci.Population DESC;
 
--- Query 5: Countries with "blue" in flag, their most populated city, population of that city, and total population of all their cities Subquery 4
+-- Query 5: Countries with "blue" in flag, their most populated city, population of that city, and total population of the country
 SELECT
     c.Name AS Country,
     f.Colors AS FlagColors,
-    lc.Name AS MostPopulatedCity,
-    lc.Population AS MostPopulatedCityPopulation,
-    ct.SumOfPopulationOfAllCities
+    ci.Name AS MostPopulatedCity,
+    FORMAT(ci.Population, 0) AS MostPopulatedCityPopulation,
+    FORMAT(c.Population, 0) AS TotalCountryPopulation
+    
 FROM Country c
+
 JOIN Flag f
     ON f.CountryCode = c.Code
-JOIN (
-    -- Compute SUM of all cities in each country
-    SELECT 
-        CountryCode,
-        SUM(Population) AS SumOfPopulationOfAllCities
-    FROM City
-    GROUP BY CountryCode
-) ct
-    ON ct.CountryCode = c.Code
-JOIN City lc
-    ON lc.CountryCode = c.Code
-WHERE f.Colors LIKE '%blue%'
-  AND lc.Population = (
-      -- Largest city in that country
-      SELECT MAX(Population)
-      FROM City
-      WHERE CountryCode = c.Code
-  )
-ORDER BY ct.SumOfPopulationOfAllCities DESC;
+    
+JOIN City ci
+    ON ci.CountryCode = c.Code
+    
+WHERE f.Colors LIKE '%blue%' 
+
+  AND ci.Population = (
+        -- Get the largest city in this country
+        SELECT MAX(Population)
+        FROM City
+        WHERE CountryCode = c.Code
+    )
+    
+ORDER BY c.Population DESC;
+
 
 -- =========== Sean's Section ============
 
