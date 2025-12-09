@@ -5550,14 +5550,17 @@ ORDER BY c.Name;
 
 -- Query 2: Shows which colors are most common on all the flags we currently have
 SELECT 
-    f.Colors AS Color,
-    COUNT(DISTINCT f.CountryCode) AS NumberOfCountries
-    
-FROM Flag f
-
-GROUP BY f.Colors
-
+    Color,
+    NumberOfCountries
+FROM (
+    SELECT 
+        f.Colors AS Color,
+        COUNT(DISTINCT f.CountryCode) AS NumberOfCountries
+    FROM Flag f
+    GROUP BY f.Colors
+) AS ColorCounts
 ORDER BY NumberOfCountries DESC, Color;
+
 
 -- Query 3: Shows countries whose flag contain exactly 3 colors and what the colors are
 SELECT 
