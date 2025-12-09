@@ -5612,12 +5612,12 @@ JOIN City ci
     
 WHERE f.Colors LIKE '%blue%' 
 
-  AND ci.Population = (
-        -- Get the largest city in this country
-        SELECT MAX(Population)
-        FROM City
-        WHERE CountryCode = c.Code
-    )
+AND ci.Population = (
+    -- Get the largest city in this country
+    SELECT MAX(Population)
+    FROM City
+    WHERE CountryCode = c.Code
+)
     
 ORDER BY c.Population DESC;
 
